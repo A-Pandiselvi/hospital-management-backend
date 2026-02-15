@@ -7,6 +7,8 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./modules/auth/routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
+import doctorRoutes from "./modules/doctor/doctor.routes.js";
+import patientRoutes from "./modules/patient/patient.routes.js";
 
 const app = express();
 
@@ -25,6 +27,8 @@ app.use(limiter);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/doctor", doctorRoutes);
+app.use("/api/patient", patientRoutes);
 
 app.get("/", (req, res) => {
   res.send("Backend is running...");
