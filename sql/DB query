@@ -1,18 +1,19 @@
 CREATE TABLE users (
-  id INT NOT NULL AUTO_INCREMENT,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(150) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  role ENUM('admin','doctor','patient') NOT NULL,
-  is_verified TINYINT(1) DEFAULT 0,
-  otp VARCHAR(10) DEFAULT NULL,
-  otp_expiry DATETIME DEFAULT NULL,
-  reset_otp VARCHAR(10) DEFAULT NULL,
-  reset_otp_expiry DATETIME DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255),
+    role ENUM('admin','doctor','patient') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    is_verified BOOLEAN DEFAULT 0,
+    otp VARCHAR(10),
+    otp_expiry DATETIME,
+    reset_otp VARCHAR(10),
+    reset_otp_expiry DATETIME,
+    is_invited BOOLEAN DEFAULT 0
+);
+
 
 
 CREATE TABLE patients (

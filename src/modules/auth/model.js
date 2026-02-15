@@ -37,14 +37,32 @@ export const verifyUserModel = async (email) => {
 export const createDoctorModel = async (
   name,
   email,
-  password
+  specialization,
+  experience,
+  consultation_fee,
+  availability
 ) => {
-  await db.query(
-    `INSERT INTO users (name, email, password, role, is_verified)
-     VALUES (?, ?, ?, 'doctor', true)`,
-    [name, email, password]
+
+  // create doctor account WITHOUT password
+  const [userResult] = await db.query(
+    `INSERT INTO users (name, email, role, is_invited, is_verified)
+     VALUES (?, ?, 'doctor', 1, 0)`,
+    [name, email]
   );
+
+  const userId = userResult.insertId;
+
+  // doctor professional profile
+  await db.query(
+    `INSERT INTO doctors (user_id, specialization, experience, consultation_fee, availability)
+     VALUES (?, ?, ?, ?, ?)`,
+    [userId, specialization, experience, consultation_fee, availability]
+  );
+
+  return userId;
 };
+
+
 
 // Save reset OTP
 export const saveResetOtpModel = async (email, otp, expiry) => {
