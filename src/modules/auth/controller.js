@@ -37,7 +37,7 @@ export const register = async (req, res) => {
 
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-
+console.log("📧docdor Register OTP:", email, otp);
       // update doctor account
       await db.query(
         `UPDATE users
@@ -65,7 +65,7 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = crypto.randomInt(100000, 999999).toString();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-
+console.log("📧 Patient Register OTP:", email, otp);
     await createPatientModel(name, email, hashedPassword, otp, otpExpiry);
 
     try {
@@ -223,7 +223,7 @@ const email = req.body.email.toLowerCase();
 
     const otp = crypto.randomInt(100000, 999999).toString();
     const expiry = new Date(Date.now() + 10 * 60 * 1000);
-
+console.log("📧 forget Register OTP:", email, otp);
     await saveResetOtpModel(email, otp, expiry);
 
     await sendOtpEmail(email, otp); // reuse your existing email function
@@ -261,6 +261,46 @@ const email = req.body.email.toLowerCase();
     res.status(500).json({ message: error.message });
   }
 };
+
+// RESEND OTP
+export const resendOtp = async (req, res) => {
+  try {
+    const email = req.body.email.toLowerCase();
+
+    if (!email)
+      return res.status(400).json({ message: "Email is required" });
+
+    const users = await findUserByEmailModel(email);
+
+    if (users.length === 0)
+      return res.status(400).json({ message: "User not found" });
+
+    const user = users[0];
+
+    // already verified
+    if (user.is_verified)
+      return res.status(400).json({ message: "Email already verified" });
+
+    // generate new OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+console.log("📧resent OTP:", email, otp);
+    // update DB
+    await db.query(
+      `UPDATE users SET otp=?, otp_expiry=? WHERE email=?`,
+      [otp, otpExpiry, email]
+    );
+
+    // send email
+    await sendOtpEmail(email, otp);
+
+    res.json({ message: "OTP resent successfully" });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 
 

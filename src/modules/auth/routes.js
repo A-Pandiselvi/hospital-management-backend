@@ -1,5 +1,5 @@
 import express from "express";
-import { createDoctor, login, register,verifyOtp ,forgotPassword, verifyResetOtp} from "./controller.js";
+import { createDoctor, login, register,verifyOtp ,forgotPassword, verifyResetOtp, resendOtp} from "./controller.js";
 import { authorize, protect } from "../../middleware/authMiddleware.js";
 
 const authRoutes = express.Router();
@@ -28,6 +28,6 @@ authRoutes.get("/admin-only", protect, authorize("admin"), (req, res) => {
 
 authRoutes.post("/forgot-password", forgotPassword);
 authRoutes.post("/verify-reset-otp", verifyResetOtp);
-
+authRoutes.post("/resend-otp", resendOtp);
 
 export default authRoutes;
