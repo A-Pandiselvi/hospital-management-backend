@@ -18,9 +18,7 @@ export const register = async (req, res) => {
 
     const existing = await findUserByEmailModel(email);
 
-    /* =====================================================
-       STEP 1 — EMAIL ONLY (SEND OTP)
-    ===================================================== */
+    // STEP 1 — EMAIL ONLY (OTP)
     if (!name && !password) {
 
       if (existing.length > 0) {
@@ -29,7 +27,7 @@ export const register = async (req, res) => {
 
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-console.log("📧 Registration OTP:", email, "OTP:", otp);
+console.log('otp sent',otp)
       await db.query(
         `INSERT INTO users (email, otp, otp_expiry, role)
          VALUES (?, ?, ?, ?)`,
@@ -41,29 +39,30 @@ console.log("📧 Registration OTP:", email, "OTP:", otp);
       return res.json({ message: "OTP sent to email" });
     }
 
-    /* =====================================================
-       STEP 3 — COMPLETE REGISTRATION
-    ===================================================== */
-    if (!name || !password) {
-      return res.status(400).json({ message: "Name and password required" });
+    // STEP 3 — COMPLETE REGISTRATION
+    else if (name && password) {
+
+      if (existing.length === 0) {
+        return res.status(400).json({ message: "Verify email first" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      await db.query(
+        `UPDATE users
+         SET name=?, password=?
+         WHERE email=?`,
+        [name, hashedPassword, email]
+      );
+
+      return res.status(201).json({
+        message: "Registration completed successfully"
+      });
     }
 
-    if (existing.length === 0) {
-      return res.status(400).json({ message: "Verify email first" });
+    else {
+      return res.status(400).json({ message: "Invalid request" });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await db.query(
-      `UPDATE users
-       SET name=?, password=?
-       WHERE email=?`,
-      [name, hashedPassword, email]
-    );
-
-    return res.status(201).json({
-      message: "Registration completed successfully"
-    });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -243,15 +242,20 @@ export const verifyResetOtp = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    const { email, newPassword } = req.body;
+    const { email, otp, newPassword } = req.body;
 
-    if (!email || !newPassword)
+    if (!email || !otp || !newPassword) {
       return res.status(400).json({ message: "All fields required" });
+    }
 
-    const users = await findUserByEmailModel(email.toLowerCase());
+    const users = await findUserByResetOtpModel(
+      email.toLowerCase(),
+      otp
+    );
 
-    if (users.length === 0)
-      return res.status(400).json({ message: "User not found" });
+    if (users.length === 0) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -263,7 +267,6 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // RESEND OTP
 export const resendOtp = async (req, res) => {
