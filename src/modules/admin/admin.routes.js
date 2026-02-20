@@ -12,9 +12,6 @@ import { protect, authorize } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/* ======================================================
-   ALL ADMIN ROUTES (Protected + Admin Only)
-====================================================== */
 
 router.get("/dashboard", protect, authorize("admin"), adminDashboard);
 
