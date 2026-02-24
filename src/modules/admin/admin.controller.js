@@ -7,13 +7,18 @@ import {
   deleteDoctorModel,
   getAllPatients,
   getAllAppointments,
-  getAllBilling
+  getAllBilling,
+  createDoctorModel,
+  updateDoctorModel,
+  deletePatientModel,
+  updateAppointmentStatusModel,
+  updateBillingStatusModel,
+  getAdminReportsModel,
+  createPatientModel,
+  updatePatientModel,
+  getAllPrescriptions
 } from "./admin.model.js";
 
-/* ======================================================
-   1️⃣ ADMIN DASHBOARD
-   GET /api/admin/dashboard
-====================================================== */
 export const adminDashboard = async (req, res) => {
   try {
     const doctors = await getTotalDoctors();
@@ -32,10 +37,6 @@ export const adminDashboard = async (req, res) => {
   }
 };
 
-/* ======================================================
-   2️⃣ GET ALL DOCTORS
-   GET /api/admin/doctors
-====================================================== */
 export const getDoctors = async (req, res) => {
   try {
     const doctors = await getAllDoctors();
@@ -45,10 +46,6 @@ export const getDoctors = async (req, res) => {
   }
 };
 
-/* ======================================================
-   3️⃣ DELETE DOCTOR
-   DELETE /api/admin/doctor/:id
-====================================================== */
 export const deleteDoctor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -61,10 +58,6 @@ export const deleteDoctor = async (req, res) => {
   }
 };
 
-/* ======================================================
-   4️⃣ GET ALL PATIENTS
-   GET /api/admin/patients
-====================================================== */
 export const getPatients = async (req, res) => {
   try {
     const patients = await getAllPatients();
@@ -74,10 +67,6 @@ export const getPatients = async (req, res) => {
   }
 };
 
-/* ======================================================
-   5️⃣ GET ALL APPOINTMENTS
-   GET /api/admin/appointments
-====================================================== */
 export const getAppointments = async (req, res) => {
   try {
     const appointments = await getAllAppointments();
@@ -87,14 +76,168 @@ export const getAppointments = async (req, res) => {
   }
 };
 
-/* ======================================================
-   6️⃣ GET BILLING
-   GET /api/admin/billing
-====================================================== */
 export const getBilling = async (req, res) => {
   try {
     const billing = await getAllBilling();
     res.json(billing);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createDoctor = async (req, res) => {
+  try {
+    await createDoctorModel(req.body);
+    res.status(201).json({ message: "Doctor added successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateDoctor = async (req, res) => {
+  try {
+    await updateDoctorModel(req.params.id, req.body);
+    res.json({ message: "Doctor updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deletePatient = async (req, res) => {
+  try {
+    await deletePatientModel(req.params.id);
+    res.json({ message: "Patient deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateAppointmentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    await updateAppointmentStatusModel(req.params.id, status);
+
+    res.json({ message: "Appointment status updated" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateBillingStatus = async (req, res) => {
+  try {
+    const { payment_status } = req.body;
+
+    await updateBillingStatusModel(req.params.id, payment_status);
+
+    res.json({ message: "Billing status updated" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAdminReports = async (req, res) => {
+  try {
+    const { range, from, to } = req.query;
+
+    const report = await getAdminReportsModel({ range, from, to });
+
+    res.json(report);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createPatient = async (req, res) => {
+  try {
+    const { name, email, password, age, gender, phone, address } = req.body;
+
+    const patient = await createPatientModel({
+      name,
+      email,
+      password,
+      age,
+      gender,
+      phone,
+      address
+    });
+
+    res.status(201).json({ message: "Patient created successfully", patient });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updatePatient = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, age, gender, phone, address } = req.body;
+
+    await updatePatientModel(id, {
+      name,
+      email,
+      age,
+      gender,
+      phone,
+      address
+    });
+
+    res.json({ message: "Patient updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createAppointment = async (req, res) => {
+  try {
+    const {
+      patient_id,
+      doctor_id,
+      appointment_date,
+      appointment_time,
+      reason
+    } = req.body;
+
+    const [result] = await db.query(
+      `INSERT INTO appointments 
+      (patient_id, doctor_id, appointment_date, appointment_time, reason, status)
+      VALUES (?, ?, ?, ?, ?, 'approved')`,
+      [patient_id, doctor_id, appointment_date, appointment_time, reason]
+    );
+
+    res.status(201).json({
+      message: "Appointment created successfully",
+      appointmentId: result.insertId
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createBilling = async (req, res) => {
+  try {
+    const { appointment_id, consultation_fee, medicine_cost } = req.body;
+
+    const [result] = await db.query(
+      `INSERT INTO billing 
+      (appointment_id, consultation_fee, medicine_cost, payment_status)
+      VALUES (?, ?, ?, 'unpaid')`,
+      [appointment_id, consultation_fee, medicine_cost]
+    );
+
+    res.status(201).json({
+      message: "Billing created successfully",
+      billingId: result.insertId
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getPrescriptions = async (req, res) => {
+  try {
+    const prescriptions = await getAllPrescriptions();
+    res.json(prescriptions);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
