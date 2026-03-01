@@ -117,10 +117,9 @@ export const sendDoctorCredentials = async (email, name) => {
   </tr>
 </table>
 
-<p>Please reset your password after login.</p>
+<p>Please complete your registration by setting your password before logging in.</p>
 
-
-    <p>Please login and change your password immediately.</p>
+<p>Click the button below to proceed and activate your account.</p>
 
     <div style="text-align:center; margin-top:20px;">
       <a href="http://localhost:5173/login"
@@ -129,7 +128,7 @@ export const sendDoctorCredentials = async (email, name) => {
                 padding:12px 25px; 
                 text-decoration:none; 
                 border-radius:5px;">
-        Login Now
+        Complete Registration
       </a>
     </div>
   `;
@@ -137,7 +136,7 @@ export const sendDoctorCredentials = async (email, name) => {
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: email,
-    subject: "Doctor Account Created",
+    subject: "Doctor Account Created - Complete Registration",
     html: emailTemplate(content),
   });
 };

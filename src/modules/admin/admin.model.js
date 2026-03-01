@@ -1,5 +1,6 @@
 import db from "../../config/db.js";
 import bcrypt from "bcryptjs";
+import { sendDoctorCredentials } from "../email/sendEmail.js";
 /* ======================================================
    1️⃣ DASHBOARD COUNTS
 ====================================================== */
@@ -58,7 +59,18 @@ export const getAllDoctors = async () => {
    3️⃣ DELETE DOCTOR
 ====================================================== */
 export const deleteDoctorModel = async (doctorId) => {
-  await db.query(`DELETE FROM doctors WHERE id = ?`, [doctorId]);
+  const [rows] = await db.query(
+    `SELECT user_id FROM doctors WHERE id = ?`,
+    [doctorId]
+  );
+
+  if (rows.length === 0) {
+    throw new Error("Doctor not found");
+  }
+
+  const userId = rows[0].user_id;
+
+  await db.query(`DELETE FROM users WHERE id = ?`, [userId]);
 };
 
 /* ======================================================
@@ -138,23 +150,23 @@ export const createDoctorModel = async (doctorData) => {
   const {
     name,
     email,
-    password,
     specialization,
     experience,
     consultation_fee,
     availability
   } = doctorData;
 
-  // 1️⃣ Insert into users
+  // Insert into users (NO PASSWORD)
   const [userResult] = await db.query(
-    `INSERT INTO users (name, email, password, role, is_verified)
-     VALUES (?, ?, ?, 'doctor', 1)`,
-    [name, email, password]
+    `INSERT INTO users 
+     (name, email, role, is_verified, is_invited)
+     VALUES (?, ?, 'doctor', 0, 1)`,
+    [name, email]
   );
 
   const userId = userResult.insertId;
 
-  // 2️⃣ Insert into doctors
+  // Insert into doctors table
   await db.query(
     `INSERT INTO doctors 
      (user_id, specialization, experience, consultation_fee, availability)
@@ -162,7 +174,10 @@ export const createDoctorModel = async (doctorData) => {
     [userId, specialization, experience, consultation_fee, availability]
   );
 
-  return { message: "Doctor created successfully" };
+  // Send mail
+  await sendDoctorCredentials(email, name);
+
+  return { message: "Doctor invited successfully" };
 };
 
 export const updateDoctorModel = async (doctorId, data) => {
@@ -183,10 +198,27 @@ export const deletePatientModel = async (patientId) => {
   await db.query(`DELETE FROM patients WHERE id = ?`, [patientId]);
 };
 
-export const updateAppointmentStatusModel = async (appointmentId, status) => {
+export const updateAppointmentStatusModel = async (
+  appointmentId,
+  appointment_date,
+  appointment_time,
+  reason,
+  status
+) => {
   await db.query(
-    `UPDATE appointments SET status = ? WHERE id = ?`,
-    [status, appointmentId]
+    `UPDATE appointments 
+     SET appointment_date = ?, 
+         appointment_time = ?, 
+         reason = ?, 
+         status = ? 
+     WHERE id = ?`,
+    [
+      appointment_date,
+      appointment_time,
+      reason,
+      status,
+      appointmentId
+    ]
   );
 };
 

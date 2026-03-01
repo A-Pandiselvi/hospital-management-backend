@@ -18,6 +18,7 @@ import {
   updatePatientModel,
   getAllPrescriptions
 } from "./admin.model.js";
+import db from "../../config/db.js";
 
 export const adminDashboard = async (req, res) => {
   try {
@@ -114,11 +115,29 @@ export const deletePatient = async (req, res) => {
 
 export const updateAppointmentStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const {
+      appointment_date,
+      appointment_time,
+      reason,
+      status,
+    } = req.body;
 
-    await updateAppointmentStatusModel(req.params.id, status);
+    const allowedStatus = ["pending", "approved", "completed", "rejected"];
 
-    res.json({ message: "Appointment status updated" });
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    await updateAppointmentStatusModel(
+      req.params.id,
+      appointment_date,
+      appointment_time,
+      reason,
+      status
+    );
+
+    res.json({ message: "Appointment updated successfully" });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -128,9 +147,16 @@ export const updateBillingStatus = async (req, res) => {
   try {
     const { payment_status } = req.body;
 
+    const allowedStatus = ["unpaid", "paid", "partial"];
+
+    if (!allowedStatus.includes(payment_status)) {
+      return res.status(400).json({ message: "Invalid payment status" });
+    }
+
     await updateBillingStatusModel(req.params.id, payment_status);
 
-    res.json({ message: "Billing status updated" });
+    res.json({ message: "Billing status updated successfully" });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -201,7 +227,7 @@ export const createAppointment = async (req, res) => {
     const [result] = await db.query(
       `INSERT INTO appointments 
       (patient_id, doctor_id, appointment_date, appointment_time, reason, status)
-      VALUES (?, ?, ?, ?, ?, 'approved')`,
+      VALUES (?, ?, ?, ?, ?, 'pending')`,
       [patient_id, doctor_id, appointment_date, appointment_time, reason]
     );
 

@@ -41,6 +41,11 @@ router.post("/doctor", protect, authorize("admin"), createDoctor);
 
 router.put("/doctor/:id", protect, authorize("admin"), updateDoctor);
 
+router.post("/appointment", protect, authorize("admin"), createAppointment);
+//finish
+
+
+
 router.delete("/patient/:id", protect, authorize("admin"), deletePatient);
 
 router.put("/appointment/:id", protect, authorize("admin"), updateAppointmentStatus);
@@ -54,7 +59,7 @@ router.post("/patient", protect, authorize("admin"), createPatient);
 
 router.put("/patient/:id", protect, authorize("admin"), updatePatient);
 
-router.post("/appointment", protect, authorize("admin"), createAppointment);
+
 
 router.post("/billing", protect, authorize("admin"), createBilling);
 

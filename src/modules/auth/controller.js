@@ -18,13 +18,36 @@ export const register = async (req, res) => {
 
     const existing = await findUserByEmailModel(email);
 
-    // STEP 1 — EMAIL ONLY (OTP)
+    // STEP 1 — EMAIL ONLY (SEND OTP)
     if (!name && !password) {
 
+      // 🔹 If user already exists
       if (existing.length > 0) {
+        const user = existing[0];
+
+        // ✅ If doctor created by admin → send OTP
+        if (user.role === "doctor") {
+
+          const otp = crypto.randomInt(100000, 999999).toString();
+          const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+          await db.query(
+            `UPDATE users
+             SET otp=?, otp_expiry=?
+             WHERE email=?`,
+            [otp, otpExpiry, email]
+          );
+
+          await sendOtpEmail(email, otp);
+
+          return res.json({ message: "OTP sent to doctor email" });
+        }
+
+        // ❌ Existing patient
         return res.status(400).json({ message: "User already exists" });
       }
 
+      // 🔹 New patient flow
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 console.log('otp sent',otp)
@@ -50,7 +73,7 @@ console.log('otp sent',otp)
 
       await db.query(
         `UPDATE users
-         SET name=?, password=?
+         SET name=?, password=?, is_verified=1
          WHERE email=?`,
         [name, hashedPassword, email]
       );
@@ -98,12 +121,20 @@ export const verifyOtp = async (req, res) => {
     // 1️⃣ mark user verified
     await verifyUserModel(email);
 
-    // 2️⃣ create patient profile automatically
-    await db.query(
-      `INSERT INTO patients (user_id)
-       VALUES (?)`,
-      [user.id]
-    );
+// 2️⃣ create patient profile automatically (if not exists)
+const [existingPatient] = await db.query(
+  `SELECT id FROM patients WHERE user_id = ?`,
+  [user.id]
+);
+
+if (existingPatient.length === 0) {
+  await db.query(
+    `INSERT INTO patients 
+     (user_id, age, gender, phone, address)
+     VALUES (?, NULL, NULL, NULL, NULL)`,
+    [user.id]
+  );
+}
 
     // 3️⃣ send success email
     try {
