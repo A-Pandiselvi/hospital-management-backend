@@ -115,12 +115,7 @@ export const deletePatient = async (req, res) => {
 
 export const updateAppointmentStatus = async (req, res) => {
   try {
-    const {
-      appointment_date,
-      appointment_time,
-      reason,
-      status,
-    } = req.body;
+const { status } = req.body;
 
     const allowedStatus = ["pending", "approved", "completed", "rejected"];
 
@@ -128,13 +123,10 @@ export const updateAppointmentStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status value" });
     }
 
-    await updateAppointmentStatusModel(
-      req.params.id,
-      appointment_date,
-      appointment_time,
-      reason,
-      status
-    );
+await updateAppointmentStatusModel(
+  req.params.id,
+  status
+);
 
     res.json({ message: "Appointment updated successfully" });
 
@@ -153,9 +145,13 @@ export const updateBillingStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid payment status" });
     }
 
-    await updateBillingStatusModel(req.params.id, payment_status);
+const result = await updateBillingStatusModel(req.params.id, payment_status);
 
-    res.json({ message: "Billing status updated successfully" });
+if (result.affectedRows === 0) {
+  return res.status(404).json({ message: "Billing not found" });
+}
+
+res.json({ message: "Billing status updated successfully" });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -243,6 +239,15 @@ export const createAppointment = async (req, res) => {
 export const createBilling = async (req, res) => {
   try {
     const { appointment_id, consultation_fee, medicine_cost } = req.body;
+
+    const [existing] = await db.query(
+  "SELECT id FROM billing WHERE appointment_id = ?",
+  [appointment_id]
+);
+
+if (existing.length > 0) {
+  return res.status(400).json({ message: "Billing already exists for this appointment" });
+}
 
     const [result] = await db.query(
       `INSERT INTO billing 

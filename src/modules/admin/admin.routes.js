@@ -42,28 +42,36 @@ router.post("/doctor", protect, authorize("admin"), createDoctor);
 router.put("/doctor/:id", protect, authorize("admin"), updateDoctor);
 
 router.post("/appointment", protect, authorize("admin"), createAppointment);
-//finish
-
-
 
 router.delete("/patient/:id", protect, authorize("admin"), deletePatient);
 
 router.put("/appointment/:id", protect, authorize("admin"), updateAppointmentStatus);
 
+router.post("/billing", protect, authorize("admin"), createBilling);
+
 router.put("/billing/:id", protect, authorize("admin"), updateBillingStatus);
+
+
+router.get("/prescriptions", protect, authorize("admin"), getPrescriptions);
+//finish
+
+
+
+
+
+
+
+
 
 router.get( "/reports", protect, authorize("admin"), getAdminReports);
 
 
-router.post("/patient", protect, authorize("admin"), createPatient);
 
 router.put("/patient/:id", protect, authorize("admin"), updatePatient);
 
 
+router.post("/patient", protect, authorize("admin"), createPatient);
 
-router.post("/billing", protect, authorize("admin"), createBilling);
-
-router.get("/prescriptions", protect, authorize("admin"), getPrescriptions);
 export default router;
 
 

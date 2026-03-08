@@ -195,38 +195,40 @@ export const updateDoctorModel = async (doctorId, data) => {
 };
 
 export const deletePatientModel = async (patientId) => {
-  await db.query(`DELETE FROM patients WHERE id = ?`, [patientId]);
+  const [patient] = await db.query(
+    `SELECT user_id FROM patients WHERE id = ?`,
+    [patientId]
+  );
+
+  if (!patient.length) {
+    throw new Error("Patient not found");
+  }
+
+  const userId = patient[0].user_id;
+
+  await db.query(`DELETE FROM users WHERE id = ?`, [userId]);
 };
+
 
 export const updateAppointmentStatusModel = async (
   appointmentId,
-  appointment_date,
-  appointment_time,
-  reason,
   status
 ) => {
   await db.query(
     `UPDATE appointments 
-     SET appointment_date = ?, 
-         appointment_time = ?, 
-         reason = ?, 
-         status = ? 
+     SET status = ?
      WHERE id = ?`,
-    [
-      appointment_date,
-      appointment_time,
-      reason,
-      status,
-      appointmentId
-    ]
+    [status, appointmentId]
   );
 };
 
 export const updateBillingStatusModel = async (billingId, payment_status) => {
-  await db.query(
+  const [result] = await db.query(
     `UPDATE billing SET payment_status = ? WHERE id = ?`,
     [payment_status, billingId]
   );
+
+  return result;
 };
 
 export const getAdminReportsModel = async ({ range, from, to }) => {
