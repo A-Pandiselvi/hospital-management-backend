@@ -16,7 +16,7 @@ import {
   updatePatient,
   createAppointment,
   createBilling,
-  getPrescriptions
+  getPrescriptions,exportReportsExcel
 } from "./admin.controller.js";
 
 import { protect, authorize } from "../../middleware/authMiddleware.js";
@@ -60,24 +60,14 @@ router.get("/prescriptions", protect, authorize("admin"), getPrescriptions);
 
 
 
-
-
-
-router.get( "/reports", protect, authorize("admin"), getAdminReports);
-
-
-
 router.put("/patient/:id", protect, authorize("admin"), updatePatient);
 
 
 router.post("/patient", protect, authorize("admin"), createPatient);
 
+
+router.get("/reports/excel", protect, authorize("admin"), exportReportsExcel);
+
 export default router;
 
 
-// API	Frontend File
-// POST doctor	AddDoctor.jsx
-// PUT doctor	EditDoctor.jsx
-// DELETE patient	AdminPatients.jsx
-// PUT appointment	AdminAppointments.jsx
-// PUT billing	AdminBilling.jsx

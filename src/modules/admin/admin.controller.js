@@ -19,6 +19,7 @@ import {
   getAllPrescriptions
 } from "./admin.model.js";
 import db from "../../config/db.js";
+import ExcelJS from "exceljs";
 
 export const adminDashboard = async (req, res) => {
   try {
@@ -269,6 +270,107 @@ export const getPrescriptions = async (req, res) => {
   try {
     const prescriptions = await getAllPrescriptions();
     res.json(prescriptions);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+export const exportReportsExcel = async (req, res) => {
+  try {
+    const workbook = new ExcelJS.Workbook();
+
+    /* =========================
+       1️⃣ APPOINTMENTS SHEET
+    ========================== */
+
+    const appointmentSheet = workbook.addWorksheet("Appointments");
+
+    const [appointments] = await db.query(`
+      SELECT 
+        a.id,
+        pu.name AS patient,
+        du.name AS doctor,
+        a.appointment_date,
+        a.appointment_time,
+        a.reason,
+        a.status
+      FROM appointments a
+      JOIN patients p ON a.patient_id = p.id
+      JOIN users pu ON p.user_id = pu.id
+      JOIN doctors d ON a.doctor_id = d.id
+      JOIN users du ON d.user_id = du.id
+      ORDER BY a.appointment_date DESC
+    `);
+
+    appointmentSheet.columns = [
+      { header: "ID", key: "id", width: 10 },
+      { header: "Patient", key: "patient", width: 25 },
+      { header: "Doctor", key: "doctor", width: 25 },
+      { header: "Date", key: "appointment_date", width: 15 },
+      { header: "Time", key: "appointment_time", width: 15 },
+      { header: "Reason", key: "reason", width: 30 },
+      { header: "Status", key: "status", width: 15 },
+    ];
+
+    appointmentSheet.addRows(appointments);
+
+    /* =========================
+       2️⃣ BILLING SHEET
+    ========================== */
+
+    const billingSheet = workbook.addWorksheet("Billing");
+
+    const [billing] = await db.query(`
+      SELECT 
+        b.id,
+        pu.name AS patient,
+        du.name AS doctor,
+        b.consultation_fee,
+        b.medicine_cost,
+        (b.consultation_fee + b.medicine_cost) AS total,
+        b.payment_status,
+        b.created_at
+      FROM billing b
+      JOIN appointments a ON b.appointment_id = a.id
+      JOIN patients p ON a.patient_id = p.id
+      JOIN users pu ON p.user_id = pu.id
+      JOIN doctors d ON a.doctor_id = d.id
+      JOIN users du ON d.user_id = du.id
+      ORDER BY b.created_at DESC
+    `);
+
+    billingSheet.columns = [
+      { header: "Bill ID", key: "id", width: 10 },
+      { header: "Patient", key: "patient", width: 25 },
+      { header: "Doctor", key: "doctor", width: 25 },
+      { header: "Consult Fee", key: "consultation_fee", width: 15 },
+      { header: "Medicine Cost", key: "medicine_cost", width: 15 },
+      { header: "Total", key: "total", width: 15 },
+      { header: "Payment Status", key: "payment_status", width: 15 },
+      { header: "Date", key: "created_at", width: 20 },
+    ];
+
+    billingSheet.addRows(billing);
+
+    /* =========================
+       DOWNLOAD EXCEL
+    ========================== */
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=hospital-report.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+
+    res.end();
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
